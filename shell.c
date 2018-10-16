@@ -134,82 +134,127 @@ void shell(char* filename)
 ******************************************************************************/
 short execute_commands(char* line)
 {
-	//exit command
-	if (strcmp(line, "exit") == 0){
-		exit(0);
-	}
-
-	short status;
+	//count the size of the array from the textfile
 	int j = 0;
-
-	while(j < line[j]){
+	while (line[j]){
 		j++;
 	}
 
-	char **array = (char **)malloc(sizeof(char *) * (j+1));
-	//char **array2 = (char **)malloc(sizeof(char *) * (j+1));
-	char *tokens = strtok(line, " ");
-	//char *tokens2
-	int i = 0, p = 0;
-	int count = 0;
-	while (tokens != NULL){
-		array[i] = tokens;
-		printf("Command: %s\n", tokens);
-		tokens = strtok(NULL, " ");
-		i++;
-		//counts how many commands and files are inputted
-		count++;
-	}
-	array[i] = NULL;
-	int u = 0;
-	for (u; u < 5; u++){
-		printf("array:  %s", &array);
-	}
-	//("array: %s\n   %s\n", *array, array[1]);
-
-	//pipe
-	int fd[2];
-	pid_t pid;
-
-	//create pipe
-	if (pipe(fd) < 0){
-		perror("pipe error");
-	}
-
-	int size = 0;
-	int sizeArray = count;
-	int v = 0;
-
-	while (size < sizeArray){
+		short status;
 		
-		//create a fork
-		pid = fork();
-
-		if (pid < 0){
-			perror("problem forking");
-		}
-		else if (pid > 0){
-			//parent process
-			wait(NULL);
+		//exit command
+		if (strcmp(line, "exit") == 0){
+			exit(0);
 		}
 		else{
-			//child process
-			//command without arguments
-			if (execlp(array[v], array[v], NULL) < 0){
-				printf("command error");
+
+			char **array = malloc(sizeof(char* ) * j);
+			//char **array2 = malloc(sizeof(char*) * j);
+
+			char *tokens;
+			//char *tokens2;
+			int i = 0;
+			int p = 0;
+			tokens = strtok(line, " ");
+			//tokens2 = strtok(line, "|><");
+
+			while(tokens != NULL){
+				array[i] = tokens;
+				printf("%s\n", tokens);
+				tokens = strtok(NULL, " ");
+				i++;
 			}
-			//command with arguments
-			else{
-				if (execlp(array[v], array[v], array[v+1], NULL) < 0){
-					printf("command error 2");
+			array[i] = NULL;
+			/**while(tokens2 != NULL){
+				array2[p++] = tokens;
+				tokens2 = strtok(NULL, " ");
+				printf("%s\n", tokens2);
+			}**/
+
+			//create pipe
+			int fd[2];
+
+			if (pipe(fd) < 0){
+				perror("pipe error");
+			}
+			//successful pipe created
+			int size = 0;
+
+			while (size < sizeof(array)/sizeof(array[0])){
+				if (strcmp(array[i], "|") == 0){
+					pid_t pid = fork();
+					
+					if(pid < 0){
+						perror("Problem forking");
+						exit(1);
+					}
+					else if(pid > 0){
+						//parent process
+						close(fd[0]);
+						
+						if(dup2(fd[1], STDOUT_FILENO) < 0){
+							perror("Can't dup");
+							exit(1);			
+						}
+						//execvp(array[i], array);
+						execlp(array[i], array[i], NULL);
+						perror("exec problem");
+						exit(1);
+					}
+					else{
+						close(fd[1]);
+					
+						if(dup2(fd[0], STDIN_FILENO) < 0){
+							perror("Can't dup");
+							exit(1);
+						}
+						execvp(array[i], array);
+						perror("Exec problem");
+						exit(1);
+					}
+					return 0;
 				}
+				i++;
 			}
-			perror("exec problem");
-		}
-		size++;
-
-		//with pipe
-	}
-
-
+		status = 0;	
+		return status;
+	}	
 }
+	/*	if ((strcmp(array[i], "<") == 0){
+			dup2(file, stdoutFile);//create dup2 to output to file
+			close(file); 
+		
+			//fork
+			pid_t pid;
+			pid = fork();
+			if (pid < 0) {
+				perror("Problem forking");
+				exit(1);
+			} 
+			else if (pid > 0) {
+				//parent process 
+				perror("exec problem");
+				close(fd[0]);
+				exit(1);
+			}
+			else {
+				//child process
+				execvp(array[i], array);
+				perror("exec problem");
+				close(fd[1]);
+				exit(1);
+			}
+
+			close(fd);
+		}
+		if ((strcmp(array[i], ">") == 0){
+			
+		}
+		/*if ((strcmp(array[i], "<") == 0) && (strcmp(array[i], "|") == 0)
+		if ((strcmp(array[i], ">") == 0) && (strcmp(array[i], "|") == 0)
+		if ((strcmp(array[i], "<") == 0) && (strcmp(array[i], ">") == 0)
+		if ((strcmp(array[i], "<") == 0) && (strcmp(array[i], ">") == 0) && (strcmp(array[i], "|") == 0)*/
+
+
+
+
